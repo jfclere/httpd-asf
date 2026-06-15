@@ -539,6 +539,11 @@ static void child_main(int child_num_arg, int child_bucket)
         pfd->reqevents = APR_POLLIN;
         pfd->client_data = lr;
 
+        /* Skip listeners with no socket (e.g., QUIC listeners before child_init) */
+        if (!lr->sd) {
+            continue;
+        }
+
         status = apr_pollset_add(pollset, pfd);
         if (status != APR_SUCCESS) {
             /* If the child processed a graceful-stop signal before

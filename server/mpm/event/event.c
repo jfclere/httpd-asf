@@ -2751,6 +2751,11 @@ static void setup_threads_runtime(void)
         pfd->desc_type = APR_POLL_SOCKET;
         pfd->desc.s = lr->sd;
 
+        /* Skip listeners with no socket (e.g., QUIC listeners before child_init) */
+        if (!lr->sd) {
+            continue;
+        }
+
         pt = apr_pcalloc(pruntime, sizeof(*pt));
         pfd->client_data = pt;
         pt->type = PT_ACCEPT;

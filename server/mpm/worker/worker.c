@@ -940,6 +940,11 @@ static void setup_threads_runtime(void)
         pfd->reqevents = APR_POLLIN;
         pfd->client_data = lr;
 
+        /* Skip listeners with no socket (e.g., QUIC listeners before child_init) */
+        if (!lr->sd) {
+            continue;
+        }
+
         rv = apr_pollset_add(worker_pollset, pfd);
         if (rv != APR_SUCCESS) {
             ap_log_error(APLOG_MARK, APLOG_EMERG, rv, ap_server_conf, APLOGNO(03286)

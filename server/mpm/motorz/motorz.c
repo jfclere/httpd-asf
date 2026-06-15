@@ -1691,6 +1691,11 @@ static void motorz_poller_add_listeners(motorz_poller_t *poller)
         sb->type = PT_ACCEPT;
         sb->baton = lr;
 
+        /* Skip listeners with no socket (e.g., QUIC listeners before child_init) */
+        if (!lr->sd) {
+            continue;
+        }
+
         poller->listener_pfds[poller->num_listener_pfds++] = pfd;
 
         status = apr_socket_opt_set(pfd->desc.s, APR_SO_NONBLOCK, 1);
