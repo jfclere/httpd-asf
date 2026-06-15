@@ -949,7 +949,10 @@ static void setup_threads_runtime(void)
             clean_child_exit(APEXIT_CHILDSICK);
         }
 
-        lr->accept_func = ap_unixd_accept;
+        /* Set default accept function - allow modules to override */
+        if (!lr->accept_func) {
+            lr->accept_func = ap_unixd_accept;
+        }
     }
 
     worker_sockets = apr_pcalloc(pruntime, threads_per_child *

@@ -2759,7 +2759,10 @@ static void setup_threads_runtime(void)
         apr_socket_opt_set(pfd->desc.s, APR_SO_NONBLOCK, 1);
         apr_pollset_add(event_pollset, pfd);
 
-        lr->accept_func = ap_unixd_accept;
+        /* Set default accept function - allow modules to override */
+        if (!lr->accept_func) {
+            lr->accept_func = ap_unixd_accept;
+        }
     }
 
     worker_sockets = apr_pcalloc(pruntime, threads_per_child *

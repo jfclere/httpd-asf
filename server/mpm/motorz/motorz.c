@@ -1716,7 +1716,10 @@ static void motorz_poller_add_listeners(motorz_poller_t *poller)
             clean_child_exit(0);
         }
 
-        lr->accept_func = ap_unixd_accept;
+        /* Set default accept function - allow modules to override */
+        if (!lr->accept_func) {
+            lr->accept_func = ap_unixd_accept;
+        }
     }
 }
 

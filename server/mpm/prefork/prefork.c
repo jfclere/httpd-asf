@@ -553,7 +553,10 @@ static void child_main(int child_num_arg, int child_bucket)
             clean_child_exit(0);
         }
 
-        lr->accept_func = ap_unixd_accept;
+        /* Set default accept function - allow modules to override */
+        if (!lr->accept_func) {
+            lr->accept_func = ap_unixd_accept;
+        }
     }
 
     retained->mpm->mpm_state = AP_MPMQ_RUNNING;
