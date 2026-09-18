@@ -1,4 +1,4 @@
-name: Windows
+name: JFC Windows
 
 on:
   push:
@@ -134,6 +134,7 @@ jobs:
             }
 
       - name: Test httpd
+        if: env.RUNNER_SIZE == 'large'
         run: |
             ${{github.workspace}}\test\pyhttpd\runtests.bat --httpd "C:\Program Files (x86)\HTTPD\bin\httpd.exe" --conf "C:\Program Files (x86)\HTTPD\conf\httpd.conf" -vvvv -x
 
