@@ -73,6 +73,11 @@ int h3q_stream_is_write_blocked(h3q_stream* st)
     return 0;
 }
 
+int h3q_stream_has_pending(h3q_stream* st)
+{
+    return st ? SSL_has_pending((SSL*)st) : 0;
+}
+
 int h3q_stream_read(h3q_stream* st, unsigned char* buf, size_t read_size, size_t* nread, int* fin)
 {
     SSL* ssl = (SSL*)st;

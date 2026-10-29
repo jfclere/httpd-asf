@@ -40,6 +40,9 @@ struct h3q_engine
     int peer_addr_ex_index;
     h3q_datagram* peer_rx_head;
     h3q_datagram* peer_rx_tail;
+
+    int bpf_map_fd; /**< BPF CID map fd, or -1 if CID routing is not active. */
+    int udp_fd;     /**< UDP socket fd, needed for CID registration. */
 };
 
 /**

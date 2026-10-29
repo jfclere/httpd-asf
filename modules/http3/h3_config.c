@@ -34,6 +34,10 @@
 #include "h3_os.h"
 #include "h3_request.h"
 #include "mod_http3.h"
+#include "quic/detail/h3q_reuseport.h"
+
+int h3_bpf_prog_fd = -1;
+int h3_bpf_map_fd  = -1;
 
 apr_port_t get_server_port(const server_rec* s)
 {
@@ -706,6 +710,22 @@ int h3_post_config(apr_pool_t* p H3_UNUSED, apr_pool_t* plog H3_UNUSED, apr_pool
     apr_file_close(f);
 
     h3_request_init();
+
+    h3_bpf_prog_fd = h3q_reuseport_open_prog(H3Q_BPF_PROG_PIN_PATH);
+    h3_bpf_map_fd  = h3q_reuseport_open_map(H3Q_BPF_MAP_PIN_PATH);
+    if (h3_bpf_prog_fd >= 0 && h3_bpf_map_fd >= 0)
+    {
+        ap_log_error(APLOG_MARK, APLOG_INFO, 0, s,
+                     "h3_post_config: eBPF CID routing ready (prog_fd=%d map_fd=%d)",
+                     h3_bpf_prog_fd, h3_bpf_map_fd);
+    }
+    else
+    {
+        if (h3_bpf_prog_fd >= 0) { close(h3_bpf_prog_fd); h3_bpf_prog_fd = -1; }
+        if (h3_bpf_map_fd >= 0)  { close(h3_bpf_map_fd);  h3_bpf_map_fd  = -1; }
+        ap_log_error(APLOG_MARK, APLOG_INFO, 0, s,
+                     "h3_post_config: eBPF CID routing not available");
+    }
 
     ap_log_error(APLOG_MARK, APLOG_INFO, 0, s, "h3_post_config: pid=%d cert=%s key=%s h3_port=%d mpm=%s threaded=%d forked=%d max_threads=%d", h3_getpid(), conf->h3_cert_path, conf->h3_key_path, (int)conf->h3_port, ap_show_mpm(), mpm_query(AP_MPMQ_IS_THREADED), mpm_query(AP_MPMQ_IS_FORKED),
                  mpm_query(AP_MPMQ_MAX_THREADS));

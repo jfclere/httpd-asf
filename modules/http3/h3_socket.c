@@ -21,6 +21,7 @@
 #include "h3_check.h"
 #include "h3_os.h"
 #include "h3_socket.h"
+#include "quic/detail/h3q_reuseport.h"
 
 static void tune_buffers(apr_socket_t* sock, apr_size_t want, apr_port_t port, apr_pool_t* pool)
 {
@@ -67,6 +68,21 @@ apr_status_t h3_socket_open(apr_port_t port, apr_size_t buffer_size, apr_pool_t*
         return rv;
     }
     apr_socket_opt_set(sock, APR_IPV6_V6ONLY, 0);
+    apr_socket_opt_set(sock, APR_SO_REUSEADDR, 1);
+#ifdef SO_REUSEPORT
+    {
+        apr_os_sock_t rp_fd = -1;
+        if (apr_os_sock_get(&rp_fd, sock) == APR_SUCCESS)
+        {
+            int on = 1;
+            if (setsockopt(rp_fd, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) != 0)
+            {
+                ap_log_perror(APLOG_MARK, APLOG_WARNING, 0, pool,
+                              "h3_socket_open(%d): SO_REUSEPORT not available", (int)port);
+            }
+        }
+    }
+#endif
     tune_buffers(sock, buffer_size, port, pool);
     apr_sockaddr_t* addr = NULL;
     rv = apr_sockaddr_info_get(&addr, NULL, APR_INET6, port, 0, pool);
@@ -103,6 +119,29 @@ apr_status_t h3_socket_open(apr_port_t port, apr_size_t buffer_size, apr_pool_t*
         ap_log_perror(APLOG_MARK, APLOG_ERR, 0, pool, "h3_socket_open: apr_os_sock_get failed");
         return rv;
     }
+#ifdef SO_REUSEPORT
+    if (h3_bpf_prog_fd >= 0)
+    {
+        if (h3q_reuseport_attach((int)os_sock, h3_bpf_prog_fd) == 0)
+        {
+            ap_log_perror(APLOG_MARK, APLOG_INFO, 0, pool,
+                          "h3_socket_open(%d): eBPF CID routing attached", (int)port);
+        }
+        else
+        {
+            ap_log_perror(APLOG_MARK, APLOG_WARNING, 0, pool,
+                          "h3_socket_open(%d): eBPF program attach failed, "
+                          "falling back to kernel hash routing", (int)port);
+        }
+    }
+    else
+    {
+        ap_log_perror(APLOG_MARK, APLOG_WARNING, 0, pool,
+                      "h3_socket_open(%d): eBPF CID routing not loaded, "
+                      "SO_REUSEPORT will misroute QUIC packets; "
+                      "see h3q_reuseport_setup.sh", (int)port);
+    }
+#endif
     *out_fd = (int)os_sock;
     return APR_SUCCESS;
 }

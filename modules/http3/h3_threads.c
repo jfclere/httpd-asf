@@ -67,11 +67,11 @@ void* APR_THREAD_FUNC h3_event_thread(apr_thread_t* thread, void* data)
                     break;
                 }
                 listener_failed = 0;
-                if (pumped > 0)
-                {
-                    work_pending = 1;
-                }
             } while (pumped > 0 && ++pump_rounds < H3_PUMP_BUDGET);
+            if (pumped > 0)
+            {
+                work_pending = 1;
+            }
         }
 
         if (io->thread_running && !io->draining)
