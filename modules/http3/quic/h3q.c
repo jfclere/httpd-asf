@@ -30,6 +30,7 @@
 #include "h3_check.h"
 #include "h3_os.h"
 #include "quic/detail/h3q_addr.h"
+#include "quic/detail/h3q_reuseport.h"
 #include "quic/detail/h3q_tls.h"
 #include "quic/h3q.h"
 
@@ -45,6 +46,8 @@ h3q_engine* h3q_engine_create(const h3q_config* cfg, int udp_fd, char* err, size
         return NULL;
     }
     engine->peer_addr_ex_index = -1;
+    engine->bpf_map_fd = -1;
+    engine->udp_fd = udp_fd;
 
     engine->ssl_ctx = h3q_tls_ctx_create(cfg, err, errlen);
     if (!engine->ssl_ctx)
@@ -117,6 +120,8 @@ h3q_engine* h3q_engine_create(const h3q_config* cfg, int udp_fd, char* err, size
         return NULL;
     }
 
+    engine->bpf_map_fd = h3_bpf_map_fd;
+
     return engine;
 }
 
@@ -127,6 +132,7 @@ void h3q_engine_destroy(h3q_engine* engine)
         return;
     }
     h3q_peer_addr_queue_clear(engine);
+    engine->bpf_map_fd = -1;
     if (engine->ssl_listener)
     {
         SSL_free(engine->ssl_listener);

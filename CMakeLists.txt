@@ -589,6 +589,7 @@ SET(mod_http3_extra_sources
   modules/http3/quic/h3q.c         modules/http3/quic/h3q_conn.c
   modules/http3/quic/h3q_stream.c
   modules/http3/quic/detail/h3q_addr.c
+  modules/http3/quic/detail/h3q_reuseport.c
   modules/http3/quic/detail/h3q_tls.c
 )
 SET(mod_ldap_extra_defines           LDAP_DECLARE_EXPORT)

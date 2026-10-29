@@ -30,6 +30,7 @@
 
 #include "h3_os.h"
 #include "quic/detail/h3q_addr.h"
+#include "quic/detail/h3q_reuseport.h"
 
 #ifdef H3Q_DCID_DEBUG
 
@@ -217,6 +218,7 @@ long h3q_peer_addr_bio_ctrl(BIO* bio, int cmd, long num, void* ptr)
 
 int h3q_peer_addr_bio_sendmmsg(BIO* bio, BIO_MSG* msg, size_t stride, size_t num_msg, uint64_t flags, size_t* msgs_processed)
 {
+    h3q_engine* engine = BIO_get_data(bio);
     BIO* next = BIO_next(bio);
 
 #ifdef H3Q_DCID_DEBUG
@@ -229,6 +231,47 @@ int h3q_peer_addr_bio_sendmmsg(BIO* bio, BIO_MSG* msg, size_t stride, size_t num
         }
     }
 #endif
+
+    /* Register server CIDs from outgoing long-header packets.
+     * The SCID in a SEND long header is the server's CID that the
+     * client will use as its DCID in subsequent packets. */
+    if (engine && engine->bpf_map_fd >= 0)
+    {
+        size_t i;
+        for (i = 0; i < num_msg; i++)
+        {
+            BIO_MSG* m = (BIO_MSG*)((unsigned char*)msg + i * stride);
+            unsigned char* d;
+            size_t dlen, dcid_len, off, scid_len;
+            uint64_t cid;
+
+            if (!m->data || m->data_len == 0)
+            {
+                continue;
+            }
+            d = (unsigned char*)m->data;
+            dlen = m->data_len;
+            if (!(d[0] & 0x80) || dlen < 6)
+            {
+                continue;
+            }
+            dcid_len = d[5];
+            off = 6 + dcid_len;
+            if (dlen <= off)
+            {
+                continue;
+            }
+            scid_len = d[off];
+            if (scid_len < 8 || dlen < off + 1 + scid_len)
+            {
+                continue;
+            }
+            cid = 0;
+            memcpy(&cid, d + off + 1, 8);
+            h3q_reuseport_register_cid(engine->bpf_map_fd, cid,
+                                       engine->udp_fd);
+        }
+    }
 
     return next ? BIO_sendmmsg(next, msg, stride, num_msg, flags, msgs_processed) : 0;
 }

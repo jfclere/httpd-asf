@@ -66,6 +66,13 @@ h3q_write_result h3q_stream_write(h3q_stream* st, const h3q_vec* vec, size_t nve
 int h3q_stream_is_write_blocked(h3q_stream* st);
 
 /**
+ * Whether data is buffered for reading, without triggering an engine tick.
+ * @param st Stream to query; NULL returns 0.
+ * @return Non-zero if SSL_read_ex would return data without blocking.
+ */
+int h3q_stream_has_pending(h3q_stream* st);
+
+/**
  * Read from a stream.
  * @param st        Stream to read from.
  * @param buf       Destination buffer.

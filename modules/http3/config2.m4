@@ -37,6 +37,7 @@ h3q.lo dnl
 h3q_conn.lo dnl
 h3q_stream.lo dnl
 h3q_addr.lo dnl
+h3q_reuseport.lo dnl
 h3q_tls.lo dnl
 "
 
