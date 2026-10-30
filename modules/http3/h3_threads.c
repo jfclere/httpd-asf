@@ -103,11 +103,7 @@ void* APR_THREAD_FUNC h3_event_thread(apr_thread_t* thread, void* data)
         {
             if (i > 0 && (i % 8) == 0)
             {
-                int p = h3q_engine_pump(io->qengine);
-                if (p > 0)
-                {
-                    work_pending = 1;
-                }
+                h3q_engine_pump(io->qengine);
             }
 
             h3_session* session = ((h3_session**)io->active_sessions->elts)[i];

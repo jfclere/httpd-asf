@@ -299,7 +299,6 @@ static int drain_one_stream(h3_session* session, h3_stream* h3s, int* data_read,
         {
             break;
         }
-
         read_size = buf_size < *bytes_remaining ? buf_size : *bytes_remaining;
         ok = h3q_stream_read(h3s->qstream, buf, read_size, &nread, &fin);
         if (ok && nread > 0)
