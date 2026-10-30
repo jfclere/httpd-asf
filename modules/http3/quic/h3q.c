@@ -208,12 +208,18 @@ void h3q_engine_want(h3q_engine* engine, int* want_read, int* want_write, int* t
     }
 }
 
+int h3q_engine_has_pending_conn(h3q_engine* engine)
+{
+    return engine ? engine->has_pending_conn : 0;
+}
+
 h3q_conn* h3q_engine_accept_conn(h3q_engine* engine)
 {
     if (!engine || !engine->ssl_listener)
     {
         return NULL;
     }
+    engine->has_pending_conn = 0;
     SSL* conn = SSL_accept_connection(engine->ssl_listener, SSL_ACCEPT_CONNECTION_NO_BLOCK);
     return (h3q_conn*)conn;
 }

@@ -365,5 +365,6 @@ int h3q_new_pending_conn_cb(SSL_CTX* ctx H3_UNUSED, SSL* conn, void* arg)
         BIO_ADDR_free(peer);
         return 0;
     }
+    engine->has_pending_conn = 1;
     return 1;
 }

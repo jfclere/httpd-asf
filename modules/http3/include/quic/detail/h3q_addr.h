@@ -43,6 +43,7 @@ struct h3q_engine
 
     int bpf_map_fd; /**< BPF CID map fd, or -1 if CID routing is not active. */
     int udp_fd;     /**< UDP socket fd, needed for CID registration. */
+    int has_pending_conn;
 };
 
 /**
