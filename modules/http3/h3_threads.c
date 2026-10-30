@@ -78,24 +78,27 @@ void* APR_THREAD_FUNC h3_event_thread(apr_thread_t* thread, void* data)
 
         if (io->thread_running && !io->draining)
         {
-            for (;;)
+            if (h3q_engine_has_pending_conn(io->qengine))
             {
-                h3q_conn* conn = h3q_engine_accept_conn(io->qengine);
-                if (!conn)
+                for (;;)
                 {
-                    break;
-                }
-                ap_log_error(APLOG_MARK, APLOG_INFO, 0, io->server, "accepted new QUIC connection");
-                if (h3_io_at_connection_limit(io))
-                {
-                    h3_server_conf* conf = ap_get_module_config(io->server->module_config, &http3_module);
-                    ap_log_error(APLOG_MARK, APLOG_WARNING, 0, io->server, "dropping QUIC connection: at H3MaxConnections limit (%u)", conf->h3_max_connections);
-                    h3q_conn_free(conn);
-                    continue;
-                }
-                if (!prepare_accepted_connection(io, conn))
-                {
-                    h3q_conn_free(conn);
+                    h3q_conn* conn = h3q_engine_accept_conn(io->qengine);
+                    if (!conn)
+                    {
+                        break;
+                    }
+                    ap_log_error(APLOG_MARK, APLOG_INFO, 0, io->server, "accepted new QUIC connection");
+                    if (h3_io_at_connection_limit(io))
+                    {
+                        h3_server_conf* conf = ap_get_module_config(io->server->module_config, &http3_module);
+                        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, io->server, "dropping QUIC connection: at H3MaxConnections limit (%u)", conf->h3_max_connections);
+                        h3q_conn_free(conn);
+                        continue;
+                    }
+                    if (!prepare_accepted_connection(io, conn))
+                    {
+                        h3q_conn_free(conn);
+                    }
                 }
             }
             progress_pending_handshakes(io);

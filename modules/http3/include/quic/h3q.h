@@ -77,6 +77,13 @@ int h3q_engine_pump(h3q_engine* engine);
 void h3q_engine_want(h3q_engine* engine, int* want_read, int* want_write, int* timeout_ms);
 
 /**
+ * Check whether the new-pending-conn callback has fired since the last accept.
+ * @param engine Engine to query; NULL yields 0.
+ * @return Non-zero if a connection may be waiting to be accepted.
+ */
+int h3q_engine_has_pending_conn(h3q_engine* engine);
+
+/**
  * Take the next handshaken connection off the accept queue.
  * @param engine Engine to accept from; NULL yields NULL.
  * @return Accepted connection, or NULL if none is ready.
