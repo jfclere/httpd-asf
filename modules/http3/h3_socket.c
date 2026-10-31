@@ -70,6 +70,7 @@ apr_status_t h3_socket_open(apr_port_t port, apr_size_t buffer_size, apr_pool_t*
     apr_socket_opt_set(sock, APR_IPV6_V6ONLY, 0);
     apr_socket_opt_set(sock, APR_SO_REUSEADDR, 1);
 #ifdef SO_REUSEPORT
+    if (h3_bpf_prog_fd >= 0)
     {
         apr_os_sock_t rp_fd = -1;
         if (apr_os_sock_get(&rp_fd, sock) == APR_SUCCESS)
@@ -136,10 +137,10 @@ apr_status_t h3_socket_open(apr_port_t port, apr_size_t buffer_size, apr_pool_t*
     }
     else
     {
-        ap_log_perror(APLOG_MARK, APLOG_WARNING, 0, pool,
+        ap_log_perror(APLOG_MARK, APLOG_INFO, 0, pool,
                       "h3_socket_open(%d): eBPF CID routing not loaded, "
-                      "SO_REUSEPORT will misroute QUIC packets; "
-                      "see h3q_reuseport_setup.sh", (int)port);
+                      "only one child will handle QUIC; "
+                      "see h3q_reuseport_setup.sh to enable multi-process", (int)port);
     }
 #endif
     *out_fd = (int)os_sock;
