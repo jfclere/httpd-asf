@@ -35,12 +35,12 @@
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 
-#define QUIC_CID_LEN 8
+#define QUIC_PREFIX_LEN 4
 
 struct {
     __uint(type, BPF_MAP_TYPE_SOCKHASH);
-    __uint(max_entries, 65536);
-    __type(key, __u64);
+    __uint(max_entries, 256);
+    __type(key, __u32);
     __type(value, __u32);
 } h3q_cid_map SEC(".maps");
 
@@ -49,16 +49,15 @@ int quic_select_reuseport(struct sk_reuseport_md *ctx)
 {
     __u8 *data     = (__u8 *)(long)ctx->data;
     __u8 *data_end = (__u8 *)(long)ctx->data_end;
-    __u64 cid = 0;
+    __u32 prefix = 0;
 
     if (data + 1 > data_end)
         return SK_PASS;
 
     if (data[0] & 0x80) {
         /* Long header: flags(1) + version(4) + dcid_len(1) + dcid...
-         * For Handshake/0-RTT the DCID is the server's 8-byte CID.
-         * For Initial packets the DCID is 20 random bytes — the first
-         * 8 bytes will miss the map, giving default kernel routing
+         * For Initial packets the DCID is random from the client —
+         * the prefix won't match, giving default kernel hash routing
          * (any child can accept a new connection). */
         __u8 dcid_len;
 
@@ -66,22 +65,21 @@ int quic_select_reuseport(struct sk_reuseport_md *ctx)
             return SK_PASS;
 
         dcid_len = data[5];
-        if (dcid_len < QUIC_CID_LEN || data + 6 + QUIC_CID_LEN > data_end)
+        if (dcid_len < QUIC_PREFIX_LEN || data + 6 + QUIC_PREFIX_LEN > data_end)
             return SK_PASS;
 
-        __builtin_memcpy(&cid, data + 6, QUIC_CID_LEN);
+        __builtin_memcpy(&prefix, data + 6, QUIC_PREFIX_LEN);
     } else {
-        /* Short header: flags(1) + dcid(8 bytes, OpenSSL default). */
-        if (data + 1 + QUIC_CID_LEN > data_end)
+        /* Short header: flags(1) + dcid... */
+        if (data + 1 + QUIC_PREFIX_LEN > data_end)
             return SK_PASS;
 
-        __builtin_memcpy(&cid, data + 1, QUIC_CID_LEN);
+        __builtin_memcpy(&prefix, data + 1, QUIC_PREFIX_LEN);
     }
 
-    /* Route to the socket that registered this CID.  On lookup failure
-     * (new connection or unknown CID) the kernel's default hash routing
-     * picks a socket from the reuseport group. */
-    bpf_sk_select_reuseport(ctx, &h3q_cid_map, &cid, 0);
+    /* Route to the socket whose worker registered this prefix.
+     * On miss the kernel's default hash routing picks a socket. */
+    bpf_sk_select_reuseport(ctx, &h3q_cid_map, &prefix, 0);
     return SK_PASS;
 }
 

@@ -120,6 +120,16 @@ h3q_engine* h3q_engine_create(const h3q_config* cfg, int udp_fd, char* err, size
 
     engine->bpf_map_fd = h3_bpf_map_fd;
 
+    if (engine->bpf_map_fd >= 0)
+    {
+        uint32_t prefix = (uint32_t)h3_getpid();
+        SSL_CTX_set_quic_cid_prefix(engine->ssl_ctx,
+                                    (const unsigned char *)&prefix,
+                                    sizeof(prefix));
+        h3q_reuseport_register_prefix(engine->bpf_map_fd, prefix, udp_fd);
+        engine->cid_prefix = prefix;
+    }
+
     return engine;
 }
 
@@ -130,6 +140,10 @@ void h3q_engine_destroy(h3q_engine* engine)
         return;
     }
     h3q_peer_addr_queue_clear(engine);
+    if (engine->bpf_map_fd >= 0)
+    {
+        h3q_reuseport_unregister_prefix(engine->bpf_map_fd, engine->cid_prefix);
+    }
     engine->bpf_map_fd = -1;
     if (engine->ssl_listener)
     {

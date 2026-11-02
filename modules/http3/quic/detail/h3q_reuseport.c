@@ -53,23 +53,23 @@ int h3q_reuseport_attach(int sock_fd, int prog_fd)
     return rv == 0 ? 0 : -1;
 }
 
-int h3q_reuseport_register_cid(int map_fd, uint64_t cid, int sock_fd)
+int h3q_reuseport_register_prefix(int map_fd, uint32_t prefix, int sock_fd)
 {
     union bpf_attr attr;
     memset(&attr, 0, sizeof(attr));
     attr.map_fd = (uint32_t)map_fd;
-    attr.key    = (uint64_t)(unsigned long)&cid;
+    attr.key    = (uint64_t)(unsigned long)&prefix;
     attr.value  = (uint64_t)(unsigned long)&sock_fd;
     attr.flags  = BPF_ANY;
     return sys_bpf(BPF_MAP_UPDATE_ELEM, &attr, sizeof(attr));
 }
 
-int h3q_reuseport_unregister_cid(int map_fd, uint64_t cid)
+int h3q_reuseport_unregister_prefix(int map_fd, uint32_t prefix)
 {
     union bpf_attr attr;
     memset(&attr, 0, sizeof(attr));
     attr.map_fd = (uint32_t)map_fd;
-    attr.key    = (uint64_t)(unsigned long)&cid;
+    attr.key    = (uint64_t)(unsigned long)&prefix;
     return sys_bpf(BPF_MAP_DELETE_ELEM, &attr, sizeof(attr));
 }
 
@@ -94,18 +94,18 @@ int h3q_reuseport_attach(int sock_fd, int prog_fd)
     return -1;
 }
 
-int h3q_reuseport_register_cid(int map_fd, uint64_t cid, int sock_fd)
+int h3q_reuseport_register_prefix(int map_fd, uint32_t prefix, int sock_fd)
 {
     (void)map_fd;
-    (void)cid;
+    (void)prefix;
     (void)sock_fd;
     return -1;
 }
 
-int h3q_reuseport_unregister_cid(int map_fd, uint64_t cid)
+int h3q_reuseport_unregister_prefix(int map_fd, uint32_t prefix)
 {
     (void)map_fd;
-    (void)cid;
+    (void)prefix;
     return -1;
 }
 

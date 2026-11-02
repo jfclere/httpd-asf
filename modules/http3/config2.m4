@@ -168,6 +168,29 @@ is usually linked shared and requires loading. ], $http3_objs, , no, [
     APACHE_CHECK_OPENSSL
     if test "$ac_cv_openssl" = "yes" ; then
         APR_ADDTO(MOD_CPPFLAGS, ["-DH3_OPENSSL"])
+        dnl APACHE_CHECK_OPENSSL caches its result; when a prior module
+        dnl (mod_ssl) already ran the check against the system OpenSSL the
+        dnl saved MOD_CFLAGS/MOD_LDFLAGS may lack a custom --with-openssl
+        dnl prefix.  Re-query pkg-config so that this module gets the
+        dnl right -I and -L flags regardless of evaluation order.
+        if test -n "$PKGCONFIG"; then
+            saved_PKG_CONFIG_PATH_h3="$PKG_CONFIG_PATH"
+            AC_ARG_WITH(openssl,, [
+                if test "x$withval" != "xyes" -a "x$withval" != "x"; then
+                    if test -f "$withval/lib64/pkgconfig/openssl.pc"; then
+                        PKG_CONFIG_PATH="$withval/lib64/pkgconfig${PKG_CONFIG_PATH+:}${PKG_CONFIG_PATH}"
+                    elif test -f "$withval/lib/pkgconfig/openssl.pc"; then
+                        PKG_CONFIG_PATH="$withval/lib/pkgconfig${PKG_CONFIG_PATH+:}${PKG_CONFIG_PATH}"
+                    fi
+                    export PKG_CONFIG_PATH
+                fi
+            ])
+            pkglookup="`$PKGCONFIG --cflags-only-I openssl`"
+            APR_ADDTO(MOD_CFLAGS, [$pkglookup])
+            pkglookup="`$PKGCONFIG --libs-only-L openssl`"
+            APR_ADDTO(MOD_LDFLAGS, [$pkglookup])
+            PKG_CONFIG_PATH="$saved_PKG_CONFIG_PATH_h3"
+        fi
     else
         enable_http3=no
     fi

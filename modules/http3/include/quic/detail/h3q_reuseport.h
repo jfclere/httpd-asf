@@ -51,22 +51,21 @@ int h3q_reuseport_open_prog(const char* prog_path);
 int h3q_reuseport_attach(int sock_fd, int prog_fd);
 
 /**
- * Register a server CID in the BPF map so that packets carrying this
- * CID are routed to @p sock_fd.  Idempotent: re-registering the same
- * CID with the same socket is a no-op.
+ * Register a CID prefix in the BPF map so that packets whose DCID
+ * starts with @p prefix are routed to @p sock_fd.
  * @param map_fd  BPF map fd from h3q_reuseport_open_map.
- * @param cid     First 8 bytes of the server CID, as a uint64_t.
+ * @param prefix  First 4 bytes of the CID prefix, as a uint32_t.
  * @param sock_fd UDP socket fd that should receive the traffic.
  * @return 0 on success, -1 on failure.
  */
-int h3q_reuseport_register_cid(int map_fd, uint64_t cid, int sock_fd);
+int h3q_reuseport_register_prefix(int map_fd, uint32_t prefix, int sock_fd);
 
 /**
- * Remove a server CID from the BPF map.
- * @param map_fd BPF map fd from h3q_reuseport_open_map.
- * @param cid    First 8 bytes of the server CID to remove.
+ * Remove a CID prefix from the BPF map.
+ * @param map_fd  BPF map fd from h3q_reuseport_open_map.
+ * @param prefix  The 4-byte prefix to remove.
  * @return 0 on success, -1 on failure.
  */
-int h3q_reuseport_unregister_cid(int map_fd, uint64_t cid);
+int h3q_reuseport_unregister_prefix(int map_fd, uint32_t prefix);
 
 #endif /* H3Q_DETAIL_REUSEPORT_H */
