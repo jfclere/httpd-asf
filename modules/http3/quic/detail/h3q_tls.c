@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +24,7 @@
 #include "h3_check.h"
 #include "quic/detail/h3q_tls.h"
 
-void h3q_tls_error(char* err, size_t errlen, const char* fmt, ...)
+void h3q_tls_error(char *err, size_t errlen, const char *fmt, ...)
 {
     if (!err || errlen == 0)
     {
@@ -52,24 +47,24 @@ void h3q_tls_error(char* err, size_t errlen, const char* fmt, ...)
     ERR_clear_error();
 }
 
-static int h3q_tls_alpn_select_cb(SSL* ssl, const unsigned char** out, unsigned char* outlen, const unsigned char* in, unsigned int inlen, void* arg)
+static int h3q_tls_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
 {
     static const unsigned char h3[] = "\x02h3";
     (void)ssl;
     (void)arg;
 
-    if (SSL_select_next_proto((unsigned char**)out, outlen, h3, sizeof(h3) - 1, in, inlen) == OPENSSL_NPN_NEGOTIATED)
+    if (SSL_select_next_proto((unsigned char **)out, outlen, h3, sizeof(h3) - 1, in, inlen) == OPENSSL_NPN_NEGOTIATED)
     {
         return SSL_TLSEXT_ERR_OK;
     }
     return SSL_TLSEXT_ERR_NOACK;
 }
 
-static void h3q_tls_keylog_cb(const SSL* ssl, const char* line)
+static void h3q_tls_keylog_cb(const SSL *ssl, const char *line)
 {
     (void)ssl;
-    const char* path = getenv("SSLKEYLOGFILE");
-    FILE* f = path ? fopen(path, "a") : NULL;
+    const char *path = getenv("SSLKEYLOGFILE");
+    FILE *f = path ? fopen(path, "a") : NULL;
     if (f)
     {
         fprintf(f, "%s\n", line);
@@ -77,18 +72,17 @@ static void h3q_tls_keylog_cb(const SSL* ssl, const char* line)
     }
 }
 
-SSL_CTX* h3q_tls_ctx_create(const h3q_config* cfg, char* err, size_t errlen)
+SSL_CTX *h3q_tls_ctx_create(const h3q_config *cfg, char *err, size_t errlen)
 {
     CHECK(cfg);
 
-    SSL_CTX* ssl_ctx = SSL_CTX_new(OSSL_QUIC_server_method());
+    SSL_CTX *ssl_ctx = SSL_CTX_new(TLS_server_method());
     if (!ssl_ctx)
     {
         h3q_tls_error(err, errlen, "SSL_CTX_new failed");
         return NULL;
     }
 
-    SSL_CTX_set_domain_flags(ssl_ctx, SSL_DOMAIN_FLAG_MULTI_THREAD);
     SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_3_VERSION);
     SSL_CTX_set_max_proto_version(ssl_ctx, TLS1_3_VERSION);
 
@@ -104,7 +98,6 @@ SSL_CTX* h3q_tls_ctx_create(const h3q_config* cfg, char* err, size_t errlen)
 
     if (!cfg->session_tickets)
     {
-        /* TLS 1.3 resumption travels in tickets, so issuing none turns it off. */
         SSL_CTX_set_num_tickets(ssl_ctx, 0);
     }
 
