@@ -205,7 +205,7 @@ static h3q_conn *h3q_conn_create(h3q_engine *engine, const ngtcp2_pkt_hd *hd, co
 
     ngtcp2_transport_params_default(&params);
     params.initial_max_streams_uni = 3;
-    params.initial_max_streams_bidi = 100;
+    params.initial_max_streams_bidi = engine->max_streams_bidi;
     params.initial_max_stream_data_bidi_local = 256 * 1024;
     params.initial_max_stream_data_bidi_remote = 256 * 1024;
     params.initial_max_stream_data_uni = 256 * 1024;
@@ -325,6 +325,7 @@ h3q_engine *h3q_engine_create(const h3q_config *cfg, int udp_fd, char *err, size
 
     engine->udp_fd = udp_fd;
     engine->idle_timeout_secs = 30;
+    engine->max_streams_bidi = cfg->max_streams_bidi ? cfg->max_streams_bidi : 100;
 
     engine->local_addrlen = sizeof(engine->local_addr);
     if (getsockname(udp_fd, (struct sockaddr *)&engine->local_addr, &engine->local_addrlen) < 0)

@@ -90,6 +90,7 @@ struct h3q_engine
     SSL_CTX *ssl_ctx;
     int udp_fd;
     uint32_t idle_timeout_secs;
+    unsigned max_streams_bidi;
 
     h3q_conn *conn_head;
 

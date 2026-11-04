@@ -154,6 +154,14 @@ int h3q_conn_shutdown(h3q_conn *conn, int is_rapid, uint64_t app_error, const ch
     return 1;
 }
 
+void h3q_conn_extend_max_streams_bidi(h3q_conn *conn, size_t n)
+{
+    if (conn && conn->qconn)
+    {
+        ngtcp2_conn_extend_max_streams_bidi(conn->qconn, n);
+    }
+}
+
 void h3q_conn_free(h3q_conn *conn)
 {
     h3q_stream *st;

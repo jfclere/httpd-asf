@@ -78,6 +78,7 @@ struct h3_session
 
     apr_time_t last_activity;
     apr_uint32_t stream_errors;
+    uint64_t max_client_streams_bidi;
 
     volatile apr_uint32_t active_tasks;
 

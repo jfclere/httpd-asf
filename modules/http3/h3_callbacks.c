@@ -34,6 +34,7 @@
 #include "h3_os.h"
 #include "h3_session.h"
 #include "mod_http3.h"
+#include "quic/h3q_conn.h"
 #include "quic/h3q_stream.h"
 
 static int set_pseudo(h3_stream* stream, h3_session* session, int32_t token, nghttp3_vec* value)
@@ -243,7 +244,7 @@ int on_reset_stream(nghttp3_conn* conn H3_UNUSED, int64_t stream_id H3_UNUSED, u
     return 0;
 }
 
-int on_stream_close(nghttp3_conn* conn H3_UNUSED, int64_t stream_id H3_UNUSED, uint64_t app_error_code H3_UNUSED, void* user_data, void* stream_user_data)
+int on_stream_close(nghttp3_conn* ngh3, int64_t stream_id, uint64_t app_error_code H3_UNUSED, void* user_data, void* stream_user_data)
 {
     h3_session* session = user_data;
     CHECK(session);
@@ -257,6 +258,12 @@ int on_stream_close(nghttp3_conn* conn H3_UNUSED, int64_t stream_id H3_UNUSED, u
             h3_session_queue_free(session, stream->qstream);
             stream->qstream = NULL;
         }
+    }
+    if (stream_id % 4 == 0 && !session->aborted && !session->ngh3_dead)
+    {
+        h3q_conn_extend_max_streams_bidi(session->qconn, 1);
+        session->max_client_streams_bidi++;
+        nghttp3_conn_set_max_client_streams_bidi(ngh3, session->max_client_streams_bidi);
     }
     return 0;
 }

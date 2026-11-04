@@ -89,6 +89,14 @@ int h3q_conn_is_closed(h3q_conn* conn);
 int h3q_conn_shutdown(h3q_conn* conn, int is_rapid, uint64_t app_error, const char* reason);
 
 /**
+ * Tell the peer it may open more bidirectional streams.  Call once per
+ * consumed bidi stream so the MAX_STREAMS credit stays replenished.
+ * @param conn Connection to update; NULL is ignored.
+ * @param n    Number of additional streams to allow (usually 1).
+ */
+void h3q_conn_extend_max_streams_bidi(h3q_conn* conn, size_t n);
+
+/**
  * Release a connection handle.
  * @param conn Connection to free; NULL is ignored.
  */

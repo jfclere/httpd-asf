@@ -36,6 +36,7 @@ typedef struct h3q_config
     const char* key_path;
     unsigned address_validation : 1;
     unsigned session_tickets : 1;
+    unsigned max_streams_bidi;
 } h3q_config;
 
 /**
