@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from .env import H3Conf, known_bug
+from .env import H3Conf
 
 
 class TestSNI:
@@ -52,7 +52,5 @@ class TestSNI:
         assert r.exit_code == 0, f"{r}"
         cn = self._get_cert_cn(r)
         assert cn is not None, "no certificate CN in curl output"
-        known_bug(env.other_domain not in cn,
-                  "HTTP/3 serves the listener cert, not the SNI-matched one")
         assert env.other_domain in cn, \
             f"expected CN={env.other_domain}, got {cn}"
