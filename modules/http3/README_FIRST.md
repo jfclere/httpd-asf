@@ -1,7 +1,11 @@
 The module is experimental just for tests.
-To build it you need openssl and nghttp3 installed.
+To build it you need openssl, nghttp3 and ngtcp2 installed.
 ```
 ./configure --enable-http3
+```
+To use the QUIC server of OpenSSL 3.5 or later instead of ngtcp2 (no 0-RTT, no connection ID routing):
+```
+./configure --enable-http3 --with-http3-quic=openssl
 ```
 To test use Firefox, Chrome or curl, Chrome is picky with the certicates.
 ```
@@ -29,4 +33,4 @@ H3HandshakeTimeout 30
     </Directory>
 </VirtualHost>
 ```
-All the connections are going to single process for the moment, openssl QUIC is slow for the moment so DON'T use in production.                                                                                                                                                                                      
+All the connections are going to single process with --with-http3-quic=openssl, which is slow for the moment, so DON'T use it in production.                                                                                                                                                                                      
